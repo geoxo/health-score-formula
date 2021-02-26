@@ -18,7 +18,8 @@ let conn = db.mongoose
   useNewUrlParser: true,
   useUnifiedTopology: true,
   retryWrites: false,
-  useFindAndModify: false
+  useFindAndModify: false,
+  useCreateIndex: true,
 })
 .then(async () => {
   console.log("Successfully connected to MongoDB.");
@@ -68,7 +69,7 @@ let conn = db.mongoose
                     }
                   }
                   if(glucose_cnt !== 0)
-                    gScore = (glucose_cnt / glucose.length * 100).toFixed(2)
+                    gScore = parseFloat((glucose_cnt / glucose.length * 100).toFixed(2))
                 }
 
                 /*let heart = curDay.heart_rates
@@ -77,11 +78,9 @@ let conn = db.mongoose
                 })*/
 
                 let HRV_SD = 0
+                let cardioScore = 0
                 
-                /*if(heart && heart.length > 0)
-                  HRV_SD = ((parseFloat(heart[heart.length - 1].value) - parseFloat(heart[0].value)) / 4) * 5
-                */
-
+              /*
                 if(curDay.heart_rates && curDay.heart_rates.length > 0)
                 {
                   let hearts = JSON.parse(JSON.stringify(curDay.heart_rates))
@@ -106,43 +105,155 @@ let conn = db.mongoose
                     }
                   }
 
-                  
                   if(HRV_SD !== 0)
                   {
-                    if(0 < HRV_SD && HRV_SD <= 10)
+                    if(0 <= HRV_SD && HRV_SD <= 9)
                     {
-                      HRV_SD = HRV_SD
+                      HRV_SD = HRV_SD * 4.44
                     }
-                    else if(10 < HRV_SD && HRV_SD <= 20)
+                    else if(10 <= HRV_SD && HRV_SD <= 19)
                     {
-                      HRV_SD = HRV_SD * 2
+                      HRV_SD = HRV_SD * 4.15
                     }
-                    else if(20 < HRV_SD && HRV_SD <= 30)
+                    else if(20 <= HRV_SD && HRV_SD <= 30)
                     {
-                      HRV_SD = HRV_SD * 1.5
+                      HRV_SD = HRV_SD * 4
                     }
-                    else if(30 < HRV_SD && HRV_SD <= 40)
+                    else if(HRV_SD > 30)
                     {
-                      HRV_SD = HRV_SD * 0.6
+                      HRV_SD = 100.00
                     }
-                    else if(40 < HRV_SD && HRV_SD <= 50)
-                    {
-                      HRV_SD = HRV_SD * 0.57
-                    }
-                    else if(50 < HRV_SD && HRV_SD <= 60)
-                    {
-                      HRV_SD = HRV_SD * 0.62
-                    }
-                    else if(60 < HRV_SD && HRV_SD <= 70)
-                    {
-                      HRV_SD = HRV_SD * 0.66
-                    }
-                    else if(70 < HRV_SD)
-                    {
-                      HRV_SD = HRV_SD * 0.7
-                    }
+                    
                     HRV_SD = HRV_SD.toFixed(2)
                   }
+                }
+                */
+
+                let variability = curDay.heart_rate_variability
+                let variabScore = 0.0
+                let variabTotal = 0
+
+                if(variability && variability.length > 0)
+                {
+                  for(let z = 0; z < variability.length; z++)
+                  {
+                    let val = parseFloat(variability[z].value)
+                    variabTotal = variabTotal + val
+                  }
+                  if(variabTotal > 0)
+                  {
+                    variabScore = parseFloat((variabTotal / variability.length).toFixed(2))
+                  
+                    if(1 <= variabScore && variabScore <= 9)
+                    {
+                      variabScore = variabScore * 2
+                    }
+                    else if(10 <= variabScore && variabScore <= 19)
+                    {
+                      variabScore = variabScore * 2
+                    }
+                    else if(20 <= variabScore && variabScore <= 29)
+                    {
+                      variabScore = variabScore * 2
+                    }
+                    else if(30 <= variabScore && variabScore <= 39)
+                    {
+                      variabScore = variabScore * 2
+                    }
+                    else if(40 <= variabScore && variabScore <= 49)
+                    {
+                      variabScore = variabScore + 40.0
+                    }
+                    else if(50 <= variabScore && variabScore <= 59)
+                    {
+                      variabScore = variabScore + 40.0
+                    }
+                    else if(variabScore > 60)
+                    {
+                      variabScore = 100.0
+                    }
+                  }
+                }
+
+                let calories = curDay.active_calories
+                //console.log('calories', calories)
+                let caloriesScore = 0.0
+                let totalCalories = 0
+
+                if(calories && calories.length > 0)
+                {
+                  for(let z = 0; z < calories.length; z++)
+                  {
+                    let val = parseFloat(calories[z].value)
+                    totalCalories = totalCalories + val                    
+                  }
+                  //console.log('total calories', totalCalories)
+                }
+
+                if(1 <= totalCalories && totalCalories <= 44)
+                {
+                  caloriesScore = 10.0
+                }
+                else if(45 <= totalCalories && totalCalories <= 89)
+                {
+                  caloriesScore = 20.0
+                }
+                else if(90 <= totalCalories && totalCalories <= 134)
+                {
+                  caloriesScore = 30.0
+                }
+                else if(135 <= totalCalories && totalCalories <= 179)
+                {
+                  caloriesScore = 40.0
+                }
+                else if(180 <= totalCalories && totalCalories <= 224)
+                {
+                 caloriesScore = 50.0
+                }
+                else if(225 <= totalCalories && totalCalories <= 269)
+                {
+                  caloriesScore = 60.0
+                }
+                else if(270 <= totalCalories && totalCalories <= 314)
+                {
+                  caloriesScore = 70.0
+                }
+                else if(315 <= totalCalories && totalCalories <= 359)
+                {
+                  caloriesScore = 80.0
+                }
+                else if(360 <= totalCalories && totalCalories <= 404)
+                {
+                  caloriesScore = 90.0
+                }
+                else if(405 <= totalCalories && totalCalories <= 449)
+                {
+                  caloriesScore = 100.0
+                }
+                else if(450 <= totalCalories && totalCalories <= 599)
+                {
+                  caloriesScore = 90.0
+                }
+                else if(600 <= totalCalories && totalCalories <= 700)
+                {
+                  caloriesScore = 80.0
+                }
+                else if(totalCalories > 700)
+                {
+                  caloriesScore = 70.0
+                }
+
+                if(variabScore !== 0 && caloriesScore !== 0)
+                {
+                  cardioScore = ((variabScore * 0.5) + (caloriesScore * 0.5 ))
+                }
+                else if(caloriesScore === 0 && variabScore !== 0)
+                {
+                  cardioScore = variabScore * 1
+                }
+                else if(caloriesScore !== 0 && variabScore === 0)
+                {
+                  cardioScore = cardioScore * 1
                 }
 
                 let summaries = JSON.parse(JSON.stringify(curDay.summaries))
@@ -156,15 +267,15 @@ let conn = db.mongoose
                 let mealactivScore = 0
                 let score = 0
 
-                if(gScore !== 0 && HRV_SD !== 0)
+                if(gScore !== 0 && cardioScore !== 0)
                 {
-                  score = ((gScore * 0.5) + (HRV_SD * 0.5 ))
+                  score = ((gScore * 0.5) + (cardioScore * 0.5 ))
                 }
-                else if(gScore === 0 && HRV_SD !== 0)
+                else if(gScore === 0 && cardioScore !== 0)
                 {
-                  score = HRV_SD * 1
+                  score = cardioScore * 1
                 }
-                else if(gScore !== 0 && HRV_SD === 0)
+                else if(gScore !== 0 && cardioScore === 0)
                 {
                   score = gScore * 1
                 }
@@ -189,7 +300,7 @@ let conn = db.mongoose
 	                        diff /= 60;
 	                        totalSleep = totalSleep + diff
 	                        diff = Math.floor(diff / 60) 
-	                        console.log('sleep', userID, diff)
+	                        //console.log('sleep', userID, diff)
 
 	                        if(diff < 7)
 	                        {
@@ -220,7 +331,7 @@ let conn = db.mongoose
 	                                }
 	                            )
 	                        }
-                    	}
+                    	  }
                       }
                     }
                     else if(summary && summary._type === "meal")
@@ -230,37 +341,52 @@ let conn = db.mongoose
                       let summaryScoreCnt = 0
                       let summaryID = summary._id
                       let summaryEndDate = new Date(summary.end_date).getTime()
+                      let summaryStartDate = new Date(summary.start_date).getTime()
                       let gLevelsCnt = 0
                       let inRange = 0
                       let mealScore = 0
 
-                      console.log('meal', userID, summary.score)
+                      //console.log('meal', userID, summary.score)
 
-                      if(summaryScore < 1) //not updated yet
-                      {
+                      /*if(summaryScore < 1) //not updated yet
+                      {*/
 	                      if(glucose && glucose.length > 0)
 	                      {
-	                        for(let z = 0; z < glucose.length; z++)
-	                        {
-	                          let startDate = new Date(glucose[z].start_date).getTime()
-	                          let diff = (startDate - summaryEndDate) / 10800000; //3 * 60 * 60 * 1000, 3 hours in miliseconds 
-	                          if (diff <= 3){ //within 3 hours of eating a meal 
-                              console.log('startDate', startDate, 'end_date', summaryEndDate)
-	                            gLevelsCnt = gLevelsCnt + 1
-	                            if(60 <= glucose[z].value && glucose[z].value <= 110)
-	                            {
-	                              inRange = inRange + 1
-	                            }
-	                          }
-	                        }
-	                      }
+                          let continuare = false
+                          for(let z = 0; z < glucose.length; z++)
+                          {
+                            let startDate = new Date(glucose[z].start_date).getTime()
+                            let diff = (startDate - summaryStartDate) / 10800000; //3 * 60 * 60 * 1000, 3 hours in miliseconds 
+                            if (diff > 1){ //we have data 3 hours after meal
+                              continuare = true
+                            }
+                          }
+
+                          if(continuare)
+                          {
+  	                        for(let z = 0; z < glucose.length; z++)
+  	                        {
+  	                          let startDate = new Date(glucose[z].start_date).getTime()
+                              //console.log('first startDate', new Date(glucose[z].start_date), glucose[z].start_date)
+  	                          let diff = (startDate - summaryStartDate) / 10800000; //3 * 60 * 60 * 1000, 3 hours in miliseconds 
+  	                          if (diff >= 0 && diff <= 1){ //within 3 hours of eating a meal 
+                                //console.log('startDate', glucose[z].start_date, 'end_date', new Date(summary.end_date), startDate, summaryEndDate, diff)
+  	                            gLevelsCnt = gLevelsCnt + 1
+  	                            if(60 <= glucose[z].value && glucose[z].value <= 110)
+  	                            {
+  	                              inRange = inRange + 1
+  	                            }
+  	                          }
+  	                        }
+                          }
+	                    //}
 
 	                      if(gLevelsCnt > 0 && inRange > 0)
 	                      {
-	                        mealScore = Math.floor((inRange / gLevelsCnt) * 10)       
+	                        mealScore = (inRange / gLevelsCnt) * 10       
 	                      }
 
-	                      console.log('gLevelsCnt', gLevelsCnt, 'inRange', inRange, 'mealScore', mealScore)
+	                      //console.log('gLevelsCnt', gLevelsCnt, 'inRange', inRange, 'mealScore', mealScore)
 	                      
 	                      if(questions && questions.length > 0)
 	                      {
@@ -319,8 +445,8 @@ let conn = db.mongoose
                       let summaryScoreCnt = 0
                       let summaryID = summary._id
 
-                      if(summaryScore < 1) //not updated yet
-                      {
+                      //if(summaryScore < 1) //not updated yet
+                      //{
 	                      if(questions && questions.length > 0)
 	                      {
 	                        for(let zz = 0; zz < questions.length; zz++)
@@ -365,18 +491,18 @@ let conn = db.mongoose
 	                              }
 	                          )
 	                      }
-                  	 	}
+                  	 	//}
                     }
                     else if(summary && summary._type === "workout")
                     {
-                      console.log('workout', userID, summary.score)
+                      //console.log('workout', userID, summary.score)
                       let questions = summary.questions
                       let summaryScore = parseFloat(summary.score['$numberDecimal'])
                       let summaryScoreCnt = 0
                       let summaryID = summary._id
 
-                      if(summaryScore < 1) //not updated yet
-                      { 
+                      //if(summaryScore < 1) //not updated yet
+                      //{ 
 	                      if(questions && questions.length > 0)
 	                      {
 	                        for(let zz = 0; zz < questions.length; zz++)
@@ -407,7 +533,7 @@ let conn = db.mongoose
 	                      if(summaryScore > 0)
 	                      {
 	                        summaryScore = summaryScore / summaryScoreCnt / 10
-	                        console.log('add workout', summaryScore)
+	                        //console.log('add workout', summaryScore)
 	                        await User.findOneAndUpdate(
 	                          {  _id: userID, "days.day": theDay},
 	                          { $set: {"days.$.data.summaries.$[summ].score": summaryScore}},
@@ -422,7 +548,7 @@ let conn = db.mongoose
 	                              }
 	                          )
 	                      }
-                  	  }
+                  	  //}
                     }  
                   }
 
@@ -430,26 +556,29 @@ let conn = db.mongoose
                 let totalMoods = 0
                 let moodsCnt = 0
 
-                if(moods)
+                if(moods && moods.length > 0)
                   for(let z = 0; z < moods.length; z++)
                   {
-                    if(moods._type === "A") //great
+                    let moodID = moods[z]._id
+                    //console.log('mood', moods[z])
+                    if(moods[z]._type === "A") //great
                     {
                       totalMoods = totalMoods + 100
+                      //console.log("mood A")
                     }
-                    else if(moods._type === "B") //good
+                    else if(moods[z]._type === "B") //good
                     {
                       totalMoods = totalMoods + 80
                     }
-                    else if(moods._type === "C") //neutral
+                    else if(moods[z]._type === "C") //neutral
                     {
                       totalMoods = totalMoods + 60
                     }
-                    else if(moods._type === "D") //bad
+                    else if(moods[z]._type === "D") //bad
                     {
                       totalMoods = totalMoods + 40
                     }
-                    else if(moods._type === "E") //awful
+                    else if(moods[z]._type === "E") //awful
                     {
                       totalMoods = totalMoods + 20
                     }
@@ -536,26 +665,28 @@ let conn = db.mongoose
               
               if(otherScore !== 0)
               {
-                if(gScore !== 0 && HRV_SD !== 0)
+                if(gScore !== 0 && cardioScore !== 0)
                 {
-                  score = ((gScore * 0.4) + (HRV_SD * 0.4 ) + (otherScore * 0.2))
+                  score = ((gScore * 0.4) + (cardioScore * 0.4 ) + (otherScore * 0.2))
                 }
               }
 
               if(score > 100)
-                score = 100
+                score = 100.0
 
-              score = score.toFixed(2)
+              score = parseFloat(score.toFixed(2))
               
               
-              console.log('userID', userID, 'day', theDay, 'score', score, 'sleepScore', sleepScore, 'subjectiveScore', subjectiveScore,
+              /*console.log('userID', userID, 'day', theDay, 'score', score, 'sleepScore', sleepScore, 'subjectiveScore', subjectiveScore,
                'moodScore', moodScore, 'mealactivScore', mealactivScore,
-               'otherScore', otherScore, 'gScore', gScore, 'HRV_SD', HRV_SD
-               )
+               'otherScore', otherScore, 'gScore', gScore, 'variabScore', variabScore,
+               'caloriesScore', caloriesScore, 'cardioScore', cardioScore
+               )*/
 
               await User.findOneAndUpdate(
               {  _id: userID, "days.day": theDay},
-              { $set: {"days.$.data.average_score": score, "days.$.data.metabolic_score": gScore, "days.$.data.cardio_score": HRV_SD}},
+              { $set: {"days.$.data.average_score": score, "days.$.data.metabolic_score": gScore, 
+                      "days.$.data.cardio_score": cardioScore, "days.$.data.mood_score": moodScore}},
               (err, user) => {
                     if (err) {
                       console.log("error updating user data!")
@@ -588,4 +719,4 @@ let conn = db.mongoose
 });
 }
 
-setInterval(updateScores, 1200000);
+setInterval(updateScores, 600000);
